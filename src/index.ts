@@ -1,5 +1,7 @@
-import { PinterestSync } from './callapi';
+import { RecordPinsData } from './pinterestService';
+import { SaveToDrive } from './driveService';
 
 declare var global: any;
 
-global.main = PinterestSync.main();
+global.recordPins = RecordPinsData.main();
+global.saveToDrive = SaveToDrive.main();

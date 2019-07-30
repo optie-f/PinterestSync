@@ -1,15 +1,13 @@
 import Spreadsheet = GoogleAppsScript.Spreadsheet.Spreadsheet;
 import Sheet = GoogleAppsScript.Spreadsheet.Sheet;
-import Folder = GoogleAppsScript.Drive.Folder;
 import HTTPResponse = GoogleAppsScript.URL_Fetch.HTTPResponse;
 
-export class PinterestSync {
+export class RecordPinsData {
   static FIRSTROW = 3;
   static ss: Spreadsheet;
   static mainSheet: Sheet;
   static url_row_id: number;
   static urls: string[] = [];
-  static rootDir: Folder;
   static cancelled: boolean;
 
   static main(): void {
@@ -28,15 +26,15 @@ export class PinterestSync {
         let data: Array<JSON> = result_json['data'];
         let row_ptr = sheet.getRange(1, 4).getValue();
         let row_ptr_current = row_ptr;
+        let newest_pin_id = sheet.getRange(row_ptr, 1).getValue();
 
         let rows = [];
         // data は新しい順に並んでいるはずなので, シートでも同様に記録しておく
         // そうするとシート先頭行とのだけの比較で差分がとれる
         for (let i = 0; i < data.length; i++) {
           let pin: JSON = data[i];
-          let newest_pin_id = sheet.getRange(row_ptr, 1).getValue();
           if (pin['id'] == newest_pin_id) break;
-          if (pin['image']['original']['width'] == 0) continue;
+          if (pin['image']['original']['width'] == 0) continue; // unavailableなやつ
           let newRow = [
             pin['id'],
             pin['created_at'],
@@ -46,7 +44,6 @@ export class PinterestSync {
           ];
           row_ptr += 1;
           rows.push(newRow);
-          this.addFileToDrive(pin['image']['original']['url']);
         }
 
         if (rows) {
@@ -77,9 +74,6 @@ export class PinterestSync {
 
   static setUrlsFromSheet(): void {
     this.mainSheet = this.ss.getSheetByName('main');
-
-    const dirId = this.mainSheet.getRange(1, 2).getValue();
-    this.rootDir = DriveApp.getFolderById(dirId);
 
     const token = this.mainSheet.getRange(2, 2).getValue();
     const data = this.mainSheet
@@ -137,12 +131,14 @@ export class PinterestSync {
     sheet.getRange(1, 2).setValue('');
     sheet.getRange(1, 3).setValue('last modified row:');
     sheet.getRange(1, 4).setValue(this.FIRSTROW);
+    sheet.getRange(1, 5).setValue('FolderID:');
     // 2 行目は header
     sheet.getRange(2, 1).setValue('id');
     sheet.getRange(2, 2).setValue('created_at');
     sheet.getRange(2, 3).setValue('width');
     sheet.getRange(2, 4).setValue('height');
     sheet.getRange(2, 5).setValue('url');
+    sheet.getRange(2, 6).setValue('saved to Drive');
 
     sheet.setColumnWidths(1, 2, 140);
     sheet
@@ -159,20 +155,5 @@ export class PinterestSync {
       )
       .applyRowBanding(SpreadsheetApp.BandingTheme.LIGHT_GREY, true, false);
     return sheet;
-  }
-
-  static addFileToDrive(url: string) {
-    const urlrow: string[][] = this.mainSheet
-      .getRange(this.url_row_id, 1, 1, 2)
-      .getValues();
-    const folderName = urlrow[0][0] + '_' + urlrow[0][1];
-
-    if (!this.rootDir.getFoldersByName(folderName).hasNext()) {
-      this.rootDir.createFolder(folderName);
-    }
-    const folderItr = this.rootDir.getFoldersByName(folderName);
-    const folder = folderItr.next();
-    const res = UrlFetchApp.fetch(url);
-    folder.createFile(res);
   }
 }
