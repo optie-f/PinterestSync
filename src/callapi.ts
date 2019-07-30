@@ -1,16 +1,20 @@
 import Spreadsheet = GoogleAppsScript.Spreadsheet.Spreadsheet;
 import Sheet = GoogleAppsScript.Spreadsheet.Sheet;
 import HTTPResponse = GoogleAppsScript.URL_Fetch.HTTPResponse;
-import { TOKEN, USERBOARDS } from './config';
 
 export class PinterestSync {
   static FIRSTROW = 3;
   static ss: Spreadsheet;
+  static mainSheet: Sheet;
+  static url_row_id: number;
   static urls: string[] = [];
+  static path: string;
+  static cancelled: boolean;
 
   static main(): void {
+    this.cancelled = false;
     this.ss = SpreadsheetApp.getActiveSpreadsheet();
-    this.setUrls();
+    this.setUrlsFromSheet();
 
     this.urls.forEach(url => {
       let result_json = this.tryHttpGet(url);
@@ -22,6 +26,7 @@ export class PinterestSync {
       do {
         let data: Array<JSON> = result_json['data'];
         let row_ptr = sheet.getRange(1, 4).getValue();
+        let row_ptr_current = row_ptr;
 
         let rows = [];
         // data は新しい順に並んでいるはずなので, シートでも同様に記録しておく
@@ -37,13 +42,14 @@ export class PinterestSync {
             pin['image']['original']['height'],
             pin['image']['original']['url'],
           ];
-          row_ptr = +1;
+          row_ptr += 1;
           rows.push(newRow);
+          this.addFileToDrive(pin['image']['original']['url']);
         }
 
         if (rows) {
-          sheet.insertRows(row_ptr, rows.length);
-          sheet.getRange(row_ptr, 1, rows.length, 5).setValues(rows);
+          sheet.insertRows(row_ptr_current, rows.length);
+          sheet.getRange(row_ptr_current, 1, rows.length, 5).setValues(rows);
         }
 
         let next: string | null = result_json['page']['next'];
@@ -54,20 +60,39 @@ export class PinterestSync {
         } else {
           sheet.getRange(1, 2).setValue('');
           sheet.getRange(1, 4).setValue(this.FIRSTROW);
+          this.mainSheet.getRange(this.url_row_id, 3).setValue(1);
+          this.url_row_id += 1;
           return;
         }
       } while (result_json);
     });
+    if (!this.cancelled) {
+      this.mainSheet
+        .getRange(4, 3, this.mainSheet.getLastRow() - 3, 1)
+        .setValue('');
+    }
   }
 
-  static setUrls(): void {
-    USERBOARDS.forEach(userBoard => {
-      userBoard.boards.forEach(boardname => {
-        let bname = userBoard.user + '/' + boardname;
-        let url = this.createUrl(bname, TOKEN);
+  static setUrlsFromSheet(): void {
+    this.mainSheet = this.ss.getSheetByName('main');
+    this.path = this.mainSheet.getRange(1, 2).getValue();
+    const token = this.mainSheet.getRange(2, 2).getValue();
+    const data = this.mainSheet
+      .getRange(4, 1, this.mainSheet.getLastRow() - 3, 3)
+      .getValues();
+    this.url_row_id = 4;
+
+    for (let i = 0; i < data.length; i++) {
+      let checked = data[i][2];
+      if (checked == '') {
+        let user = data[i][0];
+        let boardname = data[i][1];
+        let url = this.createUrl(user + '/' + boardname, token);
         this.urls.push(url);
-      });
-    });
+      } else {
+        this.url_row_id += 1;
+      }
+    }
   }
 
   static createUrl(boardname: string, access_token: string): string {
@@ -82,7 +107,6 @@ export class PinterestSync {
   static tryHttpGet(url: string): JSON | boolean {
     let res: HTTPResponse = UrlFetchApp.fetch(url);
     let text = res.getContentText();
-    Logger.log(text);
 
     try {
       JSON.parse(text);
@@ -93,7 +117,11 @@ export class PinterestSync {
 
     let result_json: JSON = JSON.parse(text);
     Logger.log(result_json);
-    if (res.getResponseCode() > 299 || !result_json['data']) return false;
+    if (res.getResponseCode() > 299 || !result_json['data']) {
+      Logger.log(text);
+      this.cancelled = true;
+      return false;
+    }
     return result_json;
   }
 
@@ -111,6 +139,22 @@ export class PinterestSync {
     sheet.getRange(2, 4).setValue('height');
     sheet.getRange(2, 5).setValue('url');
 
+    sheet.setColumnWidths(1, 2, 140);
+    sheet
+      .getRange(this.FIRSTROW, 5, sheet.getMaxRows() - this.FIRSTROW, 1)
+      .setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP);
+    sheet.setFrozenRows(this.FIRSTROW - 1);
+    sheet.getRange(2, 1, 1, 5).setFontWeight('bold');
+    sheet
+      .getRange(
+        2,
+        1,
+        sheet.getMaxRows() - this.FIRSTROW + 1,
+        sheet.getMaxColumns(),
+      )
+      .applyRowBanding(SpreadsheetApp.BandingTheme.LIGHT_GREY, true, false);
     return sheet;
   }
+
+  static addFileToDrive(url: string) {}
 }
