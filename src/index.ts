@@ -3,5 +3,9 @@ import { SaveToDrive } from './driveService';
 
 declare var global: any;
 
-global.recordPins = RecordPinsData.main();
-global.saveToDrive = SaveToDrive.main();
+global.recordPins = (): void => {
+  RecordPinsData.main();
+};
+global.saveToDrive = (): void => {
+  SaveToDrive.main();
+};

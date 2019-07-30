@@ -29,8 +29,8 @@ export class SaveToDrive {
       let row = data[i];
       if (row[1] == '') {
         let res = UrlFetchApp.fetch(row[0]);
-        let file = dstFolder.createFile(res);
-        sheet.getRange(3 + i, 6).setValue(file.getUrl());
+        dstFolder.createFile(res);
+        sheet.getRange(3 + i, 6).setValue('1');
       }
     }
   }
