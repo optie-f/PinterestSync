@@ -1,5 +1,6 @@
 import Spreadsheet = GoogleAppsScript.Spreadsheet.Spreadsheet;
 import Sheet = GoogleAppsScript.Spreadsheet.Sheet;
+import Folder = GoogleAppsScript.Drive.Folder;
 import HTTPResponse = GoogleAppsScript.URL_Fetch.HTTPResponse;
 
 export class PinterestSync {
@@ -8,7 +9,7 @@ export class PinterestSync {
   static mainSheet: Sheet;
   static url_row_id: number;
   static urls: string[] = [];
-  static path: string;
+  static rootDir: Folder;
   static cancelled: boolean;
 
   static main(): void {
@@ -35,6 +36,7 @@ export class PinterestSync {
           let pin: JSON = data[i];
           let newest_pin_id = sheet.getRange(row_ptr, 1).getValue();
           if (pin['id'] == newest_pin_id) break;
+          if (pin['image']['original']['width'] == 0) continue;
           let newRow = [
             pin['id'],
             pin['created_at'],
@@ -75,7 +77,10 @@ export class PinterestSync {
 
   static setUrlsFromSheet(): void {
     this.mainSheet = this.ss.getSheetByName('main');
-    this.path = this.mainSheet.getRange(1, 2).getValue();
+
+    const dirId = this.mainSheet.getRange(1, 2).getValue();
+    this.rootDir = DriveApp.getFolderById(dirId);
+
     const token = this.mainSheet.getRange(2, 2).getValue();
     const data = this.mainSheet
       .getRange(4, 1, this.mainSheet.getLastRow() - 3, 3)
@@ -150,11 +155,24 @@ export class PinterestSync {
         2,
         1,
         sheet.getMaxRows() - this.FIRSTROW + 1,
-        sheet.getMaxColumns(),
+        sheet.getMaxColumns()
       )
       .applyRowBanding(SpreadsheetApp.BandingTheme.LIGHT_GREY, true, false);
     return sheet;
   }
 
-  static addFileToDrive(url: string) {}
+  static addFileToDrive(url: string) {
+    const urlrow: string[][] = this.mainSheet
+      .getRange(this.url_row_id, 1, 1, 2)
+      .getValues();
+    const folderName = urlrow[0][0] + '_' + urlrow[0][1];
+
+    if (!this.rootDir.getFoldersByName(folderName).hasNext()) {
+      this.rootDir.createFolder(folderName);
+    }
+    const folderItr = this.rootDir.getFoldersByName(folderName);
+    const folder = folderItr.next();
+    const res = UrlFetchApp.fetch(url);
+    folder.createFile(res);
+  }
 }
