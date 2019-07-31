@@ -21,20 +21,24 @@ export class RecordPinsData {
       let board_id: string = result_json['data'][0]['board']['id'];
       let sheet: Sheet | null = this.ss.getSheetByName(board_id);
       if (sheet === null) sheet = this.setUpSheet(board_id);
-
+      const lastRow = sheet.getLastRow() - this.FIRSTROW + 1;
+      const all_ids: string[] = sheet
+        .getRange(this.FIRSTROW, 1, lastRow)
+        .getValues()
+        .map(x => x[0]);
+      const id_set = all_ids.reduce(function(result, item) {
+        result[item] = item; // 疑似set
+        return result;
+      }, {});
       do {
         let data: Array<JSON> = result_json['data'];
-        let row_ptr = sheet.getRange(1, 4).getValue();
-        let row_ptr_current = row_ptr;
-        let newest_pin_id = sheet.getRange(row_ptr, 1).getValue();
 
         let rows = [];
-        // data は新しい順に並んでいるはずなので, シートでも同様に記録しておく
-        // そうするとシート先頭行とのだけの比較で差分がとれる
+        // 新しく入るデータは常に 先頭行より新しい OR 最後行より古い のどちらか一方を仮定できる
         for (let i = 0; i < data.length; i++) {
           let pin: JSON = data[i];
-          if (pin['id'] == newest_pin_id) break;
           if (pin['image']['original']['width'] == 0) continue; // unavailableなやつ
+          if (Object.prototype.hasOwnProperty.call(id_set, pin['id'])) continue;
           let newRow = [
             pin['id'],
             pin['created_at'],
@@ -42,19 +46,24 @@ export class RecordPinsData {
             pin['image']['original']['height'],
             pin['image']['original']['url'],
           ];
-          row_ptr += 1;
           rows.push(newRow);
         }
 
         if (rows) {
-          sheet.insertRows(row_ptr_current, rows.length);
-          sheet.getRange(row_ptr_current, 1, rows.length, 5).setValues(rows);
+          if (
+            sheet.getRange(this.FIRSTROW, 2).getValue() < data[0]['created_at']
+          ) {
+            sheet.insertRows(this.FIRSTROW, rows.length);
+            sheet.getRange(this.FIRSTROW, 1, rows.length, 5).setValues(rows);
+          } else {
+            sheet.insertRows(lastRow, rows.length);
+            sheet.getRange(lastRow, 1, rows.length, 5).setValues(rows);
+          }
         }
 
         let next: string | null = result_json['page']['next'];
         if (next !== null) {
           sheet.getRange(1, 2).setValue(next);
-          sheet.getRange(1, 4).setValue(row_ptr);
           result_json = this.tryHttpGet(next);
         } else {
           sheet.getRange(1, 2).setValue('');
@@ -127,9 +136,8 @@ export class RecordPinsData {
   static setUpSheet(name: string): Sheet {
     const sheet = this.ss.insertSheet(name);
     // 1 行目にはAPI制限による中断後に再開するための情報を記録
-    sheet.getRange(1, 1).setValue('next:');
+    sheet.getRange(1, 1).setValue('next url:');
     sheet.getRange(1, 2).setValue('');
-    sheet.getRange(1, 3).setValue('last modified row:');
     sheet.getRange(1, 4).setValue(this.FIRSTROW);
     sheet.getRange(1, 5).setValue('FolderID:');
     // 2 行目は header
