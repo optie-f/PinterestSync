@@ -18,10 +18,15 @@ export class RecordPinsData {
     this.urls.forEach(url => {
       let result_json = this.tryHttpGet(url);
       if (!result_json) return;
+
       let board_id: string = result_json['data'][0]['board']['id'];
       let sheet: Sheet | null = this.ss.getSheetByName(board_id);
       if (sheet === null) sheet = this.setUpSheet(board_id);
       const lastRow = sheet.getLastRow() - this.FIRSTROW + 1;
+
+      const prev = sheet.getRange(1, 2).getValue();
+      if (prev != '') result_json = this.tryHttpGet(prev);
+
       const all_ids: string[] = sheet
         .getRange(this.FIRSTROW, 1, lastRow)
         .getValues()
@@ -30,6 +35,7 @@ export class RecordPinsData {
         result[item] = item; // 疑似set
         return result;
       }, {});
+
       do {
         let data: Array<JSON> = result_json['data'];
 
@@ -165,7 +171,7 @@ export class RecordPinsData {
         2,
         1,
         sheet.getMaxRows() - this.FIRSTROW + 1,
-        sheet.getMaxColumns()
+        sheet.getMaxColumns(),
       )
       .applyRowBanding(SpreadsheetApp.BandingTheme.LIGHT_GREY, true, false);
     return sheet;
