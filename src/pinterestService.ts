@@ -55,10 +55,14 @@ export class RecordPinsData {
           ) {
             sheet.insertRows(this.FIRSTROW, rows.length);
             sheet.getRange(this.FIRSTROW, 1, rows.length, 5).setValues(rows);
+            Logger.log('top insertion: ' + rows.length + ' rows');
           } else {
             sheet.insertRows(lastRow, rows.length);
             sheet.getRange(lastRow, 1, rows.length, 5).setValues(rows);
+            Logger.log('bottom insertion: ' + rows.length + ' rows');
           }
+        } else {
+          Logger.log('no row to insert');
         }
 
         let next: string | null = result_json['page']['next'];
@@ -70,6 +74,7 @@ export class RecordPinsData {
           sheet.getRange(1, 4).setValue(this.FIRSTROW);
           this.mainSheet.getRange(this.url_row_id, 3).setValue(1);
           this.url_row_id += 1;
+          Logger.log('end scanning a board');
           return;
         }
       } while (result_json);
@@ -113,6 +118,7 @@ export class RecordPinsData {
   }
 
   static tryHttpGet(url: string): JSON | boolean {
+    Logger.log('try GET: ' + url);
     let res: HTTPResponse = UrlFetchApp.fetch(url);
     let text = res.getContentText();
 
