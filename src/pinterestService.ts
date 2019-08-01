@@ -49,7 +49,7 @@ export class RecordPinsData {
           rows.push(newRow);
         }
 
-        if (rows) {
+        if (rows && rows.length >= 1) {
           if (
             sheet.getRange(this.FIRSTROW, 2).getValue() < data[0]['created_at']
           ) {
