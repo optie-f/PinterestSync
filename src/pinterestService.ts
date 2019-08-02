@@ -22,19 +22,23 @@ export class RecordPinsData {
       let board_id: string = result_json['data'][0]['board']['id'];
       let sheet: Sheet | null = this.ss.getSheetByName(board_id);
       if (sheet === null) sheet = this.setUpSheet(board_id);
-      const lastRow = sheet.getLastRow() - this.FIRSTROW + 1;
 
       const prev = sheet.getRange(1, 2).getValue();
       if (prev != '') result_json = this.tryHttpGet(prev);
 
-      const all_ids: string[] = sheet
-        .getRange(this.FIRSTROW, 1, lastRow)
-        .getValues()
-        .map(x => x[0]);
-      const id_set = all_ids.reduce(function(result, item) {
-        result[item] = item; // 疑似set
-        return result;
-      }, {});
+      let all_ids: string[];
+      let id_set: Object = {};
+
+      if (sheet.getLastRow() >= this.FIRSTROW) {
+        all_ids = sheet
+          .getRange(this.FIRSTROW, 1, sheet.getLastRow() - this.FIRSTROW + 1)
+          .getValues()
+          .map(x => x[0]);
+        id_set = all_ids.reduce(function(result, item) {
+          result[item] = item; // 疑似set
+          return result;
+        }, {});
+      }
 
       do {
         let data: Array<JSON> = result_json['data'];
@@ -63,8 +67,10 @@ export class RecordPinsData {
             sheet.getRange(this.FIRSTROW, 1, rows.length, 5).setValues(rows);
             Logger.log('top insertion: ' + rows.length + ' rows');
           } else {
-            sheet.insertRows(lastRow, rows.length);
-            sheet.getRange(lastRow, 1, rows.length, 5).setValues(rows);
+            sheet.insertRows(sheet.getLastRow(), rows.length);
+            sheet
+              .getRange(sheet.getLastRow(), 1, rows.length, 5)
+              .setValues(rows);
             Logger.log('bottom insertion: ' + rows.length + ' rows');
           }
         } else {

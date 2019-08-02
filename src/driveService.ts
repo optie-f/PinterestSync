@@ -17,12 +17,14 @@ export class SaveToDrive {
 
     for (let i = 0; i < sheets.length; i++) {
       if (sheets[i].getName() == 'main') continue;
-      this.processRecordedSheet(sheets[i]);
+      this.saveImagesRecordedAtSheetOf(sheets[i]);
     }
   }
 
-  static processRecordedSheet(sheet: Sheet): void {
+  static saveImagesRecordedAtSheetOf(sheet: Sheet): void {
     const dstFolder = this.createFolderIfNotYet(sheet);
+    if (sheet.getLastRow() <= 2) return; // if no rows
+
     const data = sheet.getRange(3, 5, sheet.getLastRow() - 2, 2).getValues();
 
     for (let i = 0; i < data.length; i++) {
