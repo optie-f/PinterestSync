@@ -10,6 +10,8 @@
 
 # How to Use
 
+## 1. Set up spreadsheet
+
 1. Create a spreadsheet to record pins.
 2. Insert a sheet named `main`, and write data to some specific cells:
    - `B1`: Id of a directory in Google Drive to save folders( Images in each board are saved to the corresponding folder under that directory)

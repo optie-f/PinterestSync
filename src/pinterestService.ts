@@ -178,7 +178,7 @@ export class RecordPinsData {
         2,
         1,
         sheet.getMaxRows() - this.FIRSTROW + 1,
-        sheet.getMaxColumns(),
+        sheet.getMaxColumns()
       )
       .applyRowBanding(SpreadsheetApp.BandingTheme.LIGHT_GREY, true, false);
     return sheet;
