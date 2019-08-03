@@ -63,6 +63,6 @@ and push:
 clasp push
 ```
 
-## Others
+## Other
 
 This project is started with the help of [gas-clasp-starter](https://github.com/howdy39/gas-clasp-starter)
