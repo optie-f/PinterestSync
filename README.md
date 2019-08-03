@@ -1,74 +1,68 @@
-# gas-clasp-starter
-A starter template for Google Apps Script by [google/clasp](https://github.com/google/clasp)
+# PinterestSync
 
-## Article
-[(Japanese) Google Apps Script をローカル環境で快適に開発するためのテンプレートを作りました](https://qiita.com/howdy39/items/0e799a9bfc1d3bccf6e5)
-
-## Tech Stack
-- [google/clasp](https://github.com/google/clasp)
-- [webpack](https://webpack.js.org/)
-- [TypeScript](http://www.typescriptlang.org/)
-- [TSLint](https://palantir.github.io/tslint/)
-- [Prettier](https://prettier.io/)
-- [Jest](https://facebook.github.io/jest/)
+> A Spreadsheet-bounded script to sync images of pins on a board with a specified folder in Google Drive
 
 ## Prerequisites
+
 - [Node.js](https://nodejs.org/)
 - [google/clasp](https://github.com/google/clasp)
+- [Pinterest API](https://developers.pinterest.com/docs/api/overview/)
 
-## Getting Started
-### Clone the repository
-```
-git clone --depth=1 https://github.com/howdy39/gas-clasp-starter.git <project_name>
-cd <project_name>
-rm -Rf .git
-```
+# How to Use
 
-### Install dependencies
-```
-npm install
-```
+1. Create a spreadsheet to record pins.
+2. Insert a sheet named `main`, and write data to some specific cells:
+   - `B1`: Id of a directory in Google Drive to save folders( Images in each board are saved to the corresponding folder under that directory)
+   - `B2`: Your access token for Pinterest API
+3. Write names of boards to sync to `4th row and later` in the following manner:
+   - column `A`: Username of the owner of the board to watch
+   - column `B`: Name of the board
+4. Open script editor and check `scriptId`.
+   - What is scriptId ? https://github.com/google/clasp#scriptid-required
 
-### Configuration
-#### Open `.clasp.json`, change scriptId
-What is scriptId ? https://github.com/google/clasp#scriptid-required
-```
+The `main` sheet should be like this:
+
+|     | A           | B                          | ... |
+| --- | ----------- | -------------------------- | --- |
+| 1   | token:      | `<your_access_token>`      |     |
+| 2   | dir_id:     | `<Id_of_parent_directory>` |     |
+| 3   | username    | boardname                  |     |
+| 4   | `user_hoge` | `fuga_board`               |     |
+| 5   | ...         | ...                        |     |
+
+notice: Don't decrease columns to less than 3. (3th column is used in this script)
+
+## 2. Configuration
+
+Create `PinterestSync/.clasp.json`, and write:
+
+```json
 {
-  "scriptId": <your_script_id>,
+  "scriptId": "<your_script_id>",
   "rootDir": "dist"
 }
 ```
 
-#### Open `src/appsscript.json`, change timeZone (optional)
-[Apps Script Manifests](https://developers.google.com/apps-script/concepts/manifests)
-```
-{
-  "timeZone": "Asia/Tokyo", ## Change timeZone
-  "dependencies": {
-  },
-  "exceptionLogging": "STACKDRIVER"
-}
+## 3. build
+
+Install dependencies
+
+```bash
+yarn install # or 'npm install'
 ```
 
-### Development and build project
-```
-npm run build
+build:
+
+```bash
+yarn build  # or 'npm run build'
 ```
 
-### Push
+and push:
+
 ```
 clasp push
 ```
 
 ## Others
-### howdy39/gas-clasp-library
-[howdy39/gas-clasp-library](https://github.com/howdy39/gas-clasp-library) is sample project made with [Google Apps Script Libraries](https://developers.google.com/apps-script/guides/libraries).   
-also, `gas-clasp-library` use circle CI.
 
-### takanakahiko/sao-clasp
-[takanakahiko/sao-clasp](https://github.com/takanakahiko/sao-clasp) was made based on gas-clasp-starter and [SAO](https://github.com/saojs/sao).
-
-
-
-## License
-This software is released under the MIT License, see LICENSE.txt.
+This project is started with the help of [gas-clasp-starter](https://github.com/howdy39/gas-clasp-starter)
