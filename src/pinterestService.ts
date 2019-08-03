@@ -1,6 +1,7 @@
 import Spreadsheet = GoogleAppsScript.Spreadsheet.Spreadsheet;
 import Sheet = GoogleAppsScript.Spreadsheet.Sheet;
 import HTTPResponse = GoogleAppsScript.URL_Fetch.HTTPResponse;
+import { parseSync } from '@babel/core';
 
 export class RecordPinsData {
   static FIRSTROW = 3;
@@ -131,14 +132,14 @@ export class RecordPinsData {
 
   static tryHttpGet(url: string): JSON | boolean {
     Logger.log('try GET: ' + url);
-    let res: HTTPResponse = UrlFetchApp.fetch(url);
-    let text = res.getContentText();
-
+    let res: HTTPResponse;
+    let text: string;
     try {
-      JSON.parse(text);
-    } catch {
-      Logger.log('JSON parse failed');
-      return false;
+      res = UrlFetchApp.fetch(url);
+    } catch (e) {
+      Logger.log(e.message);
+    } finally {
+      text = res.getContentText();
     }
 
     let result_json: JSON = JSON.parse(text);
@@ -177,7 +178,7 @@ export class RecordPinsData {
         2,
         1,
         sheet.getMaxRows() - this.FIRSTROW + 1,
-        sheet.getMaxColumns()
+        sheet.getMaxColumns(),
       )
       .applyRowBanding(SpreadsheetApp.BandingTheme.LIGHT_GREY, true, false);
     return sheet;
