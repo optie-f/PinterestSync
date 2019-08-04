@@ -138,14 +138,14 @@ export class RecordPinsData {
       res = UrlFetchApp.fetch(url);
     } catch (e) {
       Logger.log(e.message);
-    } finally {
-      text = res.getContentText();
+      return false;
     }
+    text = res.getContentText();
 
     let result_json: JSON = JSON.parse(text);
     Logger.log(result_json);
+
     if (res.getResponseCode() > 299 || !result_json['data']) {
-      Logger.log(text);
       this.cancelled = true;
       return false;
     }
