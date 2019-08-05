@@ -26,6 +26,7 @@ export class RecordPinsData {
 
       const prev = sheet.getRange(1, 2).getValue();
       if (prev != '') result_json = this.tryHttpGet(prev);
+      if (!result_json) return;
 
       let all_ids: string[];
       let id_set: Object = {};
@@ -66,16 +67,16 @@ export class RecordPinsData {
           ) {
             sheet.insertRows(this.FIRSTROW, rows.length);
             sheet.getRange(this.FIRSTROW, 1, rows.length, 5).setValues(rows);
-            Logger.log('top insertion: ' + rows.length + ' rows');
+            console.log('top insertion: ' + rows.length + ' rows');
           } else {
             sheet.insertRows(sheet.getLastRow(), rows.length);
             sheet
               .getRange(sheet.getLastRow(), 1, rows.length, 5)
               .setValues(rows);
-            Logger.log('bottom insertion: ' + rows.length + ' rows');
+            console.log('bottom insertion: ' + rows.length + ' rows');
           }
         } else {
-          Logger.log('no row to insert');
+          console.log('no row to insert');
         }
 
         let next: string | null = result_json['page']['next'];
@@ -87,7 +88,7 @@ export class RecordPinsData {
           sheet.getRange(1, 4).setValue(this.FIRSTROW);
           this.mainSheet.getRange(this.url_row_id, 3).setValue(1);
           this.url_row_id += 1;
-          Logger.log('end scanning a board');
+          console.log('end scanning a board');
           return;
         }
       } while (result_json);
@@ -131,19 +132,19 @@ export class RecordPinsData {
   }
 
   static tryHttpGet(url: string): JSON | boolean {
-    Logger.log('try GET: ' + url);
+    console.log('try GET: ' + url);
     let res: HTTPResponse;
     let text: string;
     try {
       res = UrlFetchApp.fetch(url);
     } catch (e) {
-      Logger.log(e.message);
+      console.log(e.message);
       return false;
     }
     text = res.getContentText();
 
     let result_json: JSON = JSON.parse(text);
-    Logger.log(result_json);
+    console.log(result_json);
 
     if (res.getResponseCode() > 299 || !result_json['data']) {
       this.cancelled = true;
