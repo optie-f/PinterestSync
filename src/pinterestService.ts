@@ -138,6 +138,7 @@ export class RecordPinsData {
     try {
       res = UrlFetchApp.fetch(url);
     } catch (e) {
+      this.cancelled = true;
       console.log(e.message);
       return false;
     }
